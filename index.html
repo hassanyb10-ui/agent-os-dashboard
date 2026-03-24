@@ -276,7 +276,6 @@
                   <div>
                     <p class="text-xs uppercase tracking-[0.3em] text-glowCyan/80">Agents</p>
                     <h2 class="mt-2 text-2xl font-semibold tracking-tight">Live agent intelligence</h2>
-                    <p class="mt-2 text-sm text-white/55">Simple click-to-load version. No realtime. Maximum compatibility.</p>
                   </div>
                   <div class="flex items-center gap-3">
                     <span id="agentsConnectionPill" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">Click Agents to load</span>
@@ -318,6 +317,7 @@
                 </div>
                 <span class="rounded-full bg-glowPurple/10 px-3 py-1 text-xs text-glowPurple">Derived from logs</span>
               </div>
+              <div id="modelTotalsBar" class="mt-6 flex flex-wrap gap-3"></div>
               <div class="data-scroll mt-6 overflow-x-auto">
                 <table class="min-w-full overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.02] text-sm">
                   <thead>
@@ -374,6 +374,9 @@
     var refreshAgentsBtn = document.getElementById('refreshAgentsBtn');
     var agentsConnectionPill = document.getElementById('agentsConnectionPill');
     var activityCountPill = document.getElementById('activityCountPill');
+    var modelTotalsBar = document.getElementById('modelTotalsBar');
+    var autoRefreshTimer = null;
+    var isLoadingAgents = false;
 
     function escapeHtml(value) {
       return String(value == null ? '' : value)
@@ -567,6 +570,7 @@
 
     function renderModelUsage(agentSummaries) {
       var html = '';
+      var modelTotals = {};
       var i;
       for (i = 0; i < AGENTS.length; i += 1) {
         var agent = AGENTS[i];
@@ -574,6 +578,14 @@
         var latest = summary.latest;
         var model = latest && latest.model_used ? latest.model_used : 'N/A';
         var tasksToday = summary.tasksToday || 0;
+
+        if (model !== 'N/A' && tasksToday > 0) {
+          if (!modelTotals[model]) {
+            modelTotals[model] = 0;
+          }
+          modelTotals[model] += tasksToday;
+        }
+
         html += '' +
           '<tr class="border-b border-white/10 last:border-b-0">' +
             '<td class="px-4 py-4"><div class="flex items-center gap-3"><span class="inline-block h-2.5 w-2.5 rounded-full" style="background:' + agent.color + '; box-shadow:0 0 12px ' + agent.color + '"></span><span class="font-medium text-white/90">' + escapeHtml(agent.name) + '</span></div></td>' +
@@ -582,6 +594,21 @@
           '</tr>';
       }
       modelUsageBody.innerHTML = html;
+
+      var totalsHtml = '';
+      for (var modelName in modelTotals) {
+        if (Object.prototype.hasOwnProperty.call(modelTotals, modelName)) {
+          totalsHtml += '<div class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/85"><span class="text-white/50">' + escapeHtml(modelName) + '</span><span class="mx-2 text-white/25">•</span><span class="font-semibold">Total: ' + modelTotals[modelName] + '</span></div>';
+        }
+      }
+
+      if (!totalsHtml) {
+        totalsHtml = '<div class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/50">No model data yet</div>';
+      }
+
+      if (modelTotalsBar) {
+        modelTotalsBar.innerHTML = totalsHtml;
+      }
     }
 
     function renderErrorState(message) {
@@ -636,8 +663,11 @@
     }
 
     function loadAgentsTab() {
+      if (isLoadingAgents) return;
+      isLoadingAgents = true;
       agentsConnectionPill.textContent = 'Loading live data';
       fetchAgentLogs(function (error, rows) {
+        isLoadingAgents = false;
         if (error) {
           renderErrorState('Unable to load agent data from Supabase.');
           return;
@@ -681,6 +711,9 @@
       taskStatsGrid.innerHTML = '<div class="rounded-[22px] border border-white/10 bg-white/[0.03] p-4 text-sm text-white/50">Loading Agents dashboard...</div>';
       recentActivityFeed.innerHTML = '<div class="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-6 text-sm text-white/50">Loading recent activity...</div>';
       loadAgentsTab();
+      autoRefreshTimer = window.setInterval(function () {
+        loadAgentsTab();
+      }, 30000);
     });
   </script>
 </body>
