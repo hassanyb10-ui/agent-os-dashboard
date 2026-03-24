@@ -176,6 +176,56 @@
     .data-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
     .data-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 9999px; }
 
+    .task-column {
+      min-height: 540px;
+      background: rgba(255,255,255,0.015);
+      transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .task-column.drag-over {
+      background: rgba(124, 58, 237, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(124,58,237,0.35), 0 0 0 1px rgba(124,58,237,0.15);
+      transform: translateY(-2px);
+    }
+
+    .kanban-card {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .kanban-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.14);
+      box-shadow: 0 18px 40px rgba(2,6,23,0.35);
+    }
+
+    .kanban-card.dragging {
+      opacity: 0.72;
+      transform: rotate(1deg) scale(1.01);
+      box-shadow: 0 24px 60px rgba(2,6,23,0.45);
+    }
+
+    .tiny-stat-card {
+      min-width: 108px;
+    }
+
+    .inline-task-form select,
+    .inline-task-form input,
+    .inline-task-form textarea,
+    .task-edit-form select,
+    .task-edit-form input {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: white;
+    }
+
+    .menu-panel,
+    .modal-backdrop {
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
     #agents .stagger-item {
       opacity: 1;
       transform: none;
@@ -335,8 +385,90 @@
 
         <section id="tasks" class="tab-panel">
           <div class="grid-shell">
-            <div class="stagger-item glass-card gradient-border col-span-12 rounded-[28px] p-6 lg:col-span-5"><p class="text-xs uppercase tracking-[0.3em] text-glowAmber/80">Tasks</p><h2 class="mt-2 text-2xl font-semibold tracking-tight">Execution queue</h2><div class="mt-6 h-[460px] rounded-[24px] border border-dashed border-white/10 bg-white/[0.02]"></div></div>
-            <div class="stagger-item glass-card gradient-border col-span-12 rounded-[28px] p-6 lg:col-span-7"><p class="text-xs uppercase tracking-[0.3em] text-white/45">Timeline</p><div class="mt-6 h-[460px] rounded-[24px] border border-dashed border-white/10 bg-white/[0.02]"></div></div>
+            <div class="stagger-item col-span-12">
+              <div class="glass-card gradient-border rounded-[28px] px-4 py-4 sm:px-5">
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div class="flex items-center gap-4">
+                    <div class="relative flex h-20 w-20 items-center justify-center">
+                      <canvas id="tasksDonutChart" width="80" height="80"></canvas>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                      <div class="tiny-stat-card rounded-2xl border border-blue-500/20 bg-blue-500/5 px-4 py-3 shadow-[0_0_20px_rgba(59,130,246,0.08)]">
+                        <p class="text-[11px] uppercase tracking-[0.22em] text-blue-200/70">To Do</p>
+                        <p id="todoOverviewCount" class="mt-2 text-xl font-semibold text-blue-300">0</p>
+                        <p id="todoOverviewPct" class="text-xs text-white/45">0%</p>
+                      </div>
+                      <div class="tiny-stat-card rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 shadow-[0_0_20px_rgba(245,158,11,0.08)]">
+                        <p class="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">Doing</p>
+                        <p id="doingOverviewCount" class="mt-2 text-xl font-semibold text-amber-300">0</p>
+                        <p id="doingOverviewPct" class="text-xs text-white/45">0%</p>
+                      </div>
+                      <div class="tiny-stat-card rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 shadow-[0_0_20px_rgba(16,185,129,0.08)]">
+                        <p class="text-[11px] uppercase tracking-[0.22em] text-emerald-200/70">Done</p>
+                        <p id="doneOverviewCount" class="mt-2 text-xl font-semibold text-emerald-300">0</p>
+                        <p id="doneOverviewPct" class="text-xs text-white/45">0%</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center justify-end gap-3">
+                    <select id="taskCategoryFilter" class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/80 outline-none">
+                      <option value="all">All categories</option>
+                      <option value="Work">Work</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Development">Development</option>
+                      <option value="Personal">Personal</option>
+                    </select>
+                    <select id="taskPriorityFilter" class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/80 outline-none">
+                      <option value="all">All priorities</option>
+                      <option value="Urgent">Urgent</option>
+                      <option value="Normal">Normal</option>
+                      <option value="Someday">Someday</option>
+                    </select>
+                    <span id="tasksMotivationBadge" class="rounded-full border border-white/10 bg-gradient-to-r from-glowPurple/15 to-glowPink/15 px-4 py-2 text-sm font-medium text-white shadow-[0_0_24px_rgba(236,72,153,0.12)]">Just getting started — let's go! 🚀</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="stagger-item col-span-12">
+              <div class="grid gap-5 xl:grid-cols-3">
+                <div class="task-column rounded-[28px] p-4" data-column="todo">
+                  <div class="mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <h3 class="text-lg font-semibold text-white">To Do</h3>
+                      <span id="todoColumnCount" class="rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-300">0</span>
+                    </div>
+                  </div>
+                  <div id="todoCards" class="space-y-3"></div>
+                  <div id="todoAddForm" class="mt-3"></div>
+                  <button class="add-task-btn mt-4 text-sm font-medium text-white/55 transition hover:text-white" data-column="todo">+ Add Task</button>
+                </div>
+
+                <div class="task-column rounded-[28px] p-4" data-column="in_progress">
+                  <div class="mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <h3 class="text-lg font-semibold text-white">Doing</h3>
+                      <span id="doingColumnCount" class="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">0</span>
+                    </div>
+                  </div>
+                  <div id="doingCards" class="space-y-3"></div>
+                  <div id="doingAddForm" class="mt-3"></div>
+                  <button class="add-task-btn mt-4 text-sm font-medium text-white/55 transition hover:text-white" data-column="in_progress">+ Add Task</button>
+                </div>
+
+                <div class="task-column rounded-[28px] p-4" data-column="done">
+                  <div class="mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <h3 class="text-lg font-semibold text-white">Done</h3>
+                      <span id="doneColumnCount" class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">0</span>
+                    </div>
+                  </div>
+                  <div id="doneCards" class="space-y-3"></div>
+                  <div id="doneAddForm" class="mt-3"></div>
+                  <button class="add-task-btn mt-4 text-sm font-medium text-white/55 transition hover:text-white" data-column="done">+ Add Task</button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -376,6 +508,11 @@
     var modelTotalsBar = document.getElementById('modelTotalsBar');
     var autoRefreshTimer = null;
     var isLoadingAgents = false;
+    var tasksLoadedOnce = false;
+    var taskItems = [];
+    var taskChart = null;
+    var activeTaskMenuId = null;
+    var activeTaskEditId = null;
 
     function escapeHtml(value) {
       return String(value == null ? '' : value)
@@ -456,6 +593,9 @@
 
       if (tabId === 'agents' && !agentsLoadedOnce) {
         loadAgentsTab();
+      }
+      if (tabId === 'tasks' && !tasksLoadedOnce) {
+        initializeTasksTab();
       }
     }
 
@@ -698,6 +838,411 @@
       }
     }
 
+    function mapColumnDomId(status) {
+      if (status === 'todo') return 'todo';
+      if (status === 'in_progress') return 'doing';
+      return 'done';
+    }
+
+    function getTaskCategoryClass(category) {
+      if (category === 'Work') return 'border-purple-400/20 bg-purple-500/10 text-purple-300';
+      if (category === 'Marketing') return 'border-amber-400/20 bg-amber-500/10 text-amber-300';
+      if (category === 'Development') return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300';
+      if (category === 'Personal') return 'border-cyan-400/20 bg-cyan-500/10 text-cyan-300';
+      return 'border-white/10 bg-white/5 text-white/60';
+    }
+
+    function getTaskPriorityClass(priority) {
+      if (priority === 'Urgent') return 'border-red-400/20 bg-red-500/10 text-red-300';
+      if (priority === 'Normal') return 'border-blue-400/20 bg-blue-500/10 text-blue-300';
+      if (priority === 'Someday') return 'border-white/10 bg-slate-500/10 text-slate-300';
+      return 'border-white/10 bg-white/5 text-white/60';
+    }
+
+    function getTrackStatusClass(status) {
+      if (status === 'On Track') return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300';
+      if (status === 'At Risk') return 'border-amber-400/20 bg-amber-500/10 text-amber-300';
+      if (status === 'Off Track') return 'border-red-400/20 bg-red-500/10 text-red-300';
+      return 'border-white/10 bg-white/5 text-white/60';
+    }
+
+    function filterTasks(tasks) {
+      var categoryFilter = document.getElementById('taskCategoryFilter');
+      var priorityFilter = document.getElementById('taskPriorityFilter');
+      var categoryValue = categoryFilter ? categoryFilter.value : 'all';
+      var priorityValue = priorityFilter ? priorityFilter.value : 'all';
+      var filtered = [];
+      var i;
+      for (i = 0; i < tasks.length; i += 1) {
+        var task = tasks[i];
+        if (categoryValue !== 'all' && task.category !== categoryValue) continue;
+        if (priorityValue !== 'all' && task.priority !== priorityValue) continue;
+        filtered.push(task);
+      }
+      return filtered;
+    }
+
+    function renderTaskOverview(tasks) {
+      var todoCount = 0;
+      var doingCount = 0;
+      var doneCount = 0;
+      var i;
+      for (i = 0; i < tasks.length; i += 1) {
+        if (tasks[i].status === 'todo') todoCount += 1;
+        else if (tasks[i].status === 'in_progress') doingCount += 1;
+        else if (tasks[i].status === 'done') doneCount += 1;
+      }
+      var total = tasks.length || 1;
+      var donePct = Math.round((doneCount / total) * 100);
+      var todoPct = Math.round((todoCount / total) * 100);
+      var doingPct = Math.round((doingCount / total) * 100);
+
+      document.getElementById('todoOverviewCount').textContent = todoCount;
+      document.getElementById('todoOverviewPct').textContent = todoPct + '%';
+      document.getElementById('doingOverviewCount').textContent = doingCount;
+      document.getElementById('doingOverviewPct').textContent = doingPct + '%';
+      document.getElementById('doneOverviewCount').textContent = doneCount;
+      document.getElementById('doneOverviewPct').textContent = donePct + '%';
+
+      var message = "Just getting started — let's go! 🚀";
+      if (donePct > 30 && donePct <= 60) message = 'Good progress — keep pushing! 💪';
+      else if (donePct > 60 && donePct <= 90) message = 'Almost there — finish strong! 🔥';
+      else if (donePct > 90) message = 'Outstanding — you crushed it! 🏆';
+      document.getElementById('tasksMotivationBadge').textContent = message;
+
+      var ctx = document.getElementById('tasksDonutChart');
+      if (ctx) {
+        if (taskChart) taskChart.destroy();
+        taskChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['To Do', 'Doing', 'Done'],
+            datasets: [{ data: [todoCount, doingCount, doneCount], backgroundColor: ['#3B82F6', '#F59E0B', '#10B981'], borderWidth: 0, hoverOffset: 2 }]
+          },
+          options: {
+            responsive: false,
+            cutout: '72%',
+            plugins: { legend: { display: false }, tooltip: { enabled: true } }
+          }
+        });
+      }
+    }
+
+    function renderTaskAddForm(status) {
+      var domId = mapColumnDomId(status) + 'AddForm';
+      var container = document.getElementById(domId);
+      if (!container) return;
+      container.innerHTML = '' +
+        '<div class="inline-task-form rounded-2xl border border-white/10 bg-white/[0.03] p-4">' +
+          '<div class="grid gap-3">' +
+            '<input id="add-title-' + status + '" class="rounded-xl px-3 py-2 text-sm outline-none" placeholder="Task title" />' +
+            '<div class="grid gap-3 sm:grid-cols-2">' +
+              '<select id="add-category-' + status + '" class="rounded-xl px-3 py-2 text-sm outline-none"><option>Work</option><option>Marketing</option><option>Development</option><option>Personal</option></select>' +
+              '<select id="add-priority-' + status + '" class="rounded-xl px-3 py-2 text-sm outline-none"><option>Urgent</option><option selected>Normal</option><option>Someday</option></select>' +
+            '</div>' +
+            '<div class="grid gap-3 sm:grid-cols-2">' +
+              '<select id="add-track-' + status + '" class="rounded-xl px-3 py-2 text-sm outline-none"><option>On Track</option><option>At Risk</option><option>Off Track</option></select>' +
+              '<input id="add-due-' + status + '" type="date" class="rounded-xl px-3 py-2 text-sm outline-none" />' +
+            '</div>' +
+            '<div class="flex items-center justify-end gap-2">' +
+              '<button class="cancel-add-task rounded-full border border-white/10 px-3 py-1.5 text-sm text-white/60" data-column="' + status + '">Cancel</button>' +
+              '<button class="save-add-task rounded-full bg-white px-4 py-1.5 text-sm font-medium text-slate-900" data-column="' + status + '">Save</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    function closeAllTaskForms() {
+      var ids = ['todoAddForm', 'doingAddForm', 'doneAddForm'];
+      for (var i = 0; i < ids.length; i += 1) {
+        var node = document.getElementById(ids[i]);
+        if (node) node.innerHTML = '';
+      }
+    }
+
+    function renderTaskColumns() {
+      var filteredTasks = filterTasks(taskItems);
+      var columns = { todo: [], in_progress: [], done: [] };
+      var i;
+      for (i = 0; i < filteredTasks.length; i += 1) {
+        var task = filteredTasks[i];
+        if (!columns[task.status]) columns[task.status] = [];
+        columns[task.status].push(task);
+      }
+
+      document.getElementById('todoColumnCount').textContent = columns.todo.length;
+      document.getElementById('doingColumnCount').textContent = columns.in_progress.length;
+      document.getElementById('doneColumnCount').textContent = columns.done.length;
+
+      var map = [
+        { key: 'todo', el: 'todoCards' },
+        { key: 'in_progress', el: 'doingCards' },
+        { key: 'done', el: 'doneCards' }
+      ];
+
+      for (i = 0; i < map.length; i += 1) {
+        var target = document.getElementById(map[i].el);
+        var items = columns[map[i].key];
+        if (!items.length) {
+          target.innerHTML = '<div class="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm text-white/40">No tasks</div>';
+          continue;
+        }
+        var html = '';
+        for (var j = 0; j < items.length; j += 1) {
+          var task = items[j];
+          var dueText = task.due_date ? formatDateTime(task.due_date + 'T12:00:00') : 'No due date';
+          html += '' +
+            '<article class="kanban-card rounded-[24px] p-4" draggable="true" data-task-id="' + task.id + '">' +
+              '<div class="flex items-start justify-between gap-3">' +
+                '<div class="flex min-w-0 items-start gap-3">' +
+                  '<button class="task-complete-toggle mt-0.5 h-5 w-5 rounded-full border ' + (task.completed ? 'border-emerald-400 bg-emerald-400/20' : 'border-white/20 bg-transparent') + '" data-task-id="' + task.id + '"></button>' +
+                  '<div class="min-w-0"><h4 class="truncate text-sm font-semibold text-white">' + escapeHtml(task.title) + '</h4></div>' +
+                '</div>' +
+                '<div class="relative">' +
+                  '<button class="task-menu-toggle rounded-full px-2 py-1 text-white/50 hover:bg-white/5 hover:text-white" data-task-id="' + task.id + '">•••</button>' +
+                  ' ' + (activeTaskMenuId === task.id ? ('<div class="menu-panel absolute right-0 top-9 z-20 min-w-[120px] rounded-2xl border border-white/10 bg-slate-950/90 p-2 shadow-2xl"><button class="task-edit-btn block w-full rounded-xl px-3 py-2 text-left text-sm text-white/80 hover:bg-white/5" data-task-id="' + task.id + '">Edit</button><button class="task-delete-btn block w-full rounded-xl px-3 py-2 text-left text-sm text-red-300 hover:bg-red-500/10" data-task-id="' + task.id + '">Delete</button></div>') : '') +
+                '</div>' +
+              '</div>' +
+              '<div class="mt-4 flex flex-wrap gap-2">' +
+                '<span class="rounded-full border px-2.5 py-1 text-xs font-medium ' + getTaskCategoryClass(task.category) + '">' + escapeHtml(task.category || 'N/A') + '</span>' +
+                '<span class="rounded-full border px-2.5 py-1 text-xs font-medium ' + getTaskPriorityClass(task.priority) + '">' + escapeHtml(task.priority || 'N/A') + '</span>' +
+                '<span class="rounded-full border px-2.5 py-1 text-xs font-medium ' + getTrackStatusClass(task.track_status) + '">' + escapeHtml(task.track_status || 'N/A') + '</span>' +
+              '</div>' +
+              '<div class="mt-4 text-xs text-white/40">Due ' + escapeHtml(dueText) + '</div>' +
+            '</article>';
+        }
+        target.innerHTML = html;
+      }
+      renderTaskOverview(filteredTasks);
+      bindTaskInteractions();
+    }
+
+    function bindTaskInteractions() {
+      var cards = document.querySelectorAll('#tasks .kanban-card');
+      for (var i = 0; i < cards.length; i += 1) {
+        cards[i].addEventListener('dragstart', function (event) {
+          this.classList.add('dragging');
+          event.dataTransfer.setData('text/plain', this.getAttribute('data-task-id'));
+        });
+        cards[i].addEventListener('dragend', function () {
+          this.classList.remove('dragging');
+          var cols = document.querySelectorAll('#tasks .task-column');
+          for (var c = 0; c < cols.length; c += 1) cols[c].classList.remove('drag-over');
+        });
+      }
+
+      var columns = document.querySelectorAll('#tasks .task-column');
+      for (var j = 0; j < columns.length; j += 1) {
+        columns[j].addEventListener('dragover', function (event) { event.preventDefault(); this.classList.add('drag-over'); });
+        columns[j].addEventListener('dragleave', function () { this.classList.remove('drag-over'); });
+        columns[j].addEventListener('drop', function (event) {
+          event.preventDefault();
+          this.classList.remove('drag-over');
+          var taskId = event.dataTransfer.getData('text/plain');
+          updateTaskStatus(taskId, this.getAttribute('data-column'));
+        });
+      }
+
+      var addButtons = document.querySelectorAll('.add-task-btn');
+      for (j = 0; j < addButtons.length; j += 1) {
+        addButtons[j].onclick = function () { closeAllTaskForms(); renderTaskAddForm(this.getAttribute('data-column')); bindTaskInteractions(); };
+      }
+
+      var cancelButtons = document.querySelectorAll('.cancel-add-task');
+      for (j = 0; j < cancelButtons.length; j += 1) {
+        cancelButtons[j].onclick = function () { closeAllTaskForms(); };
+      }
+
+      var saveButtons = document.querySelectorAll('.save-add-task');
+      for (j = 0; j < saveButtons.length; j += 1) {
+        saveButtons[j].onclick = function () { createTask(this.getAttribute('data-column')); };
+      }
+
+      var menuButtons = document.querySelectorAll('.task-menu-toggle');
+      for (j = 0; j < menuButtons.length; j += 1) {
+        menuButtons[j].onclick = function () {
+          var id = this.getAttribute('data-task-id');
+          activeTaskMenuId = activeTaskMenuId === id ? null : id;
+          renderTaskColumns();
+        };
+      }
+
+      var editButtons = document.querySelectorAll('.task-edit-btn');
+      for (j = 0; j < editButtons.length; j += 1) {
+        editButtons[j].onclick = function () { openEditTaskModal(this.getAttribute('data-task-id')); };
+      }
+
+      var deleteButtons = document.querySelectorAll('.task-delete-btn');
+      for (j = 0; j < deleteButtons.length; j += 1) {
+        deleteButtons[j].onclick = function () { deleteTask(this.getAttribute('data-task-id')); };
+      }
+
+      var completeButtons = document.querySelectorAll('.task-complete-toggle');
+      for (j = 0; j < completeButtons.length; j += 1) {
+        completeButtons[j].onclick = function () { toggleTaskCompleted(this.getAttribute('data-task-id')); };
+      }
+    }
+
+    function taskRequest(method, query, body, callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.open(method, SUPABASE_URL + '/rest/v1/todos' + query, true);
+      xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('Prefer', 'return=representation');
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+        if (xhr.status >= 200 && xhr.status < 300) {
+          var data = [];
+          try { data = JSON.parse(xhr.responseText || '[]'); } catch (e) {}
+          callback(null, data);
+        } else {
+          callback(new Error('HTTP ' + xhr.status));
+        }
+      };
+      xhr.onerror = function () { callback(new Error('Network error')); };
+      xhr.send(body ? JSON.stringify(body) : null);
+    }
+
+    function fetchTasks(callback) {
+      taskRequest('GET', '?select=id,title,category,priority,due_date,completed,status,track_status,created_at&order=created_at.asc', null, callback);
+    }
+
+    function seedTasksIfNeeded(callback) {
+      fetchTasks(function (error, rows) {
+        if (error) { callback(error); return; }
+        if (rows && rows.length) { callback(null); return; }
+        var sample = [
+          { title: 'Analyze competitor content strategy', category: 'Work', priority: 'Urgent', track_status: 'At Risk', status: 'todo', completed: false },
+          { title: 'Write weekly newsletter draft', category: 'Marketing', priority: 'Normal', track_status: 'On Track', status: 'todo', completed: false },
+          { title: 'Set up API integration', category: 'Development', priority: 'Normal', track_status: 'On Track', status: 'in_progress', completed: false },
+          { title: 'Record product demo video', category: 'Marketing', priority: 'Urgent', track_status: 'At Risk', status: 'in_progress', completed: false },
+          { title: 'Update landing page copy', category: 'Work', priority: 'Someday', track_status: 'On Track', status: 'done', completed: true },
+          { title: 'Research new influencer partnerships', category: 'Marketing', priority: 'Normal', track_status: 'On Track', status: 'done', completed: true }
+        ];
+        taskRequest('POST', '', sample, function (seedError) { callback(seedError || null); });
+      });
+    }
+
+    function loadTasks(callback) {
+      fetchTasks(function (error, rows) {
+        if (error) {
+          if (callback) callback(error);
+          return;
+        }
+        taskItems = rows || [];
+        renderTaskColumns();
+        tasksLoadedOnce = true;
+        if (callback) callback(null);
+      });
+    }
+
+    function initializeTasksTab() {
+      seedTasksIfNeeded(function (error) {
+        if (error) {
+          document.getElementById('todoCards').innerHTML = '<div class="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-sm text-red-200">Unable to load tasks.</div>';
+          return;
+        }
+        loadTasks();
+      });
+    }
+
+    function updateTaskStatus(taskId, newStatus) {
+      var completed = newStatus === 'done';
+      taskRequest('PATCH', '?id=eq.' + encodeURIComponent(taskId), { status: newStatus, completed: completed }, function (error) {
+        if (!error) loadTasks();
+      });
+    }
+
+    function createTask(status) {
+      var title = document.getElementById('add-title-' + status).value;
+      var category = document.getElementById('add-category-' + status).value;
+      var priority = document.getElementById('add-priority-' + status).value;
+      var track = document.getElementById('add-track-' + status).value;
+      var due = document.getElementById('add-due-' + status).value || null;
+      if (!title) return;
+      taskRequest('POST', '', [{ title: title, category: category, priority: priority, track_status: track, due_date: due, status: status, completed: status === 'done' }], function (error) {
+        if (!error) { closeAllTaskForms(); loadTasks(); }
+      });
+    }
+
+    function findTask(taskId) {
+      for (var i = 0; i < taskItems.length; i += 1) if (String(taskItems[i].id) === String(taskId)) return taskItems[i];
+      return null;
+    }
+
+    function openEditTaskModal(taskId) {
+      activeTaskMenuId = null;
+      activeTaskEditId = taskId;
+      var task = findTask(taskId);
+      if (!task) return;
+      closeEditTaskModal();
+      var wrapper = document.createElement('div');
+      wrapper.id = 'taskEditModal';
+      wrapper.className = 'modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4';
+      wrapper.innerHTML = '' +
+        '<div class="task-edit-form glass-card gradient-border w-full max-w-xl rounded-[28px] p-6">' +
+          '<div class="flex items-center justify-between"><h3 class="text-xl font-semibold text-white">Edit Task</h3><button id="closeTaskModalBtn" class="rounded-full px-3 py-1 text-white/55 hover:bg-white/5 hover:text-white">✕</button></div>' +
+          '<div class="mt-5 grid gap-3">' +
+            '<input id="editTaskTitle" class="rounded-xl px-3 py-2 text-sm outline-none" value="' + escapeHtml(task.title || '') + '" />' +
+            '<div class="grid gap-3 sm:grid-cols-2">' +
+              '<select id="editTaskCategory" class="rounded-xl px-3 py-2 text-sm outline-none"><option ' + (task.category === 'Work' ? 'selected' : '') + '>Work</option><option ' + (task.category === 'Marketing' ? 'selected' : '') + '>Marketing</option><option ' + (task.category === 'Development' ? 'selected' : '') + '>Development</option><option ' + (task.category === 'Personal' ? 'selected' : '') + '>Personal</option></select>' +
+              '<select id="editTaskPriority" class="rounded-xl px-3 py-2 text-sm outline-none"><option ' + (task.priority === 'Urgent' ? 'selected' : '') + '>Urgent</option><option ' + (task.priority === 'Normal' ? 'selected' : '') + '>Normal</option><option ' + (task.priority === 'Someday' ? 'selected' : '') + '>Someday</option></select>' +
+            '</div>' +
+            '<div class="grid gap-3 sm:grid-cols-2">' +
+              '<select id="editTaskTrack" class="rounded-xl px-3 py-2 text-sm outline-none"><option ' + (task.track_status === 'On Track' ? 'selected' : '') + '>On Track</option><option ' + (task.track_status === 'At Risk' ? 'selected' : '') + '>At Risk</option><option ' + (task.track_status === 'Off Track' ? 'selected' : '') + '>Off Track</option></select>' +
+              '<input id="editTaskDue" type="date" class="rounded-xl px-3 py-2 text-sm outline-none" value="' + escapeHtml(task.due_date || '') + '" />' +
+            '</div>' +
+            '<select id="editTaskStatus" class="rounded-xl px-3 py-2 text-sm outline-none"><option value="todo" ' + (task.status === 'todo' ? 'selected' : '') + '>To Do</option><option value="in_progress" ' + (task.status === 'in_progress' ? 'selected' : '') + '>Doing</option><option value="done" ' + (task.status === 'done' ? 'selected' : '') + '>Done</option></select>' +
+            '<div class="mt-2 flex items-center justify-end gap-2"><button id="cancelTaskEditBtn" class="rounded-full border border-white/10 px-3 py-1.5 text-sm text-white/60">Cancel</button><button id="saveTaskEditBtn" class="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-slate-900">Save</button></div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(wrapper);
+      document.getElementById('closeTaskModalBtn').onclick = closeEditTaskModal;
+      document.getElementById('cancelTaskEditBtn').onclick = closeEditTaskModal;
+      document.getElementById('saveTaskEditBtn').onclick = saveTaskEdit;
+      wrapper.addEventListener('click', function (event) { if (event.target === wrapper) closeEditTaskModal(); });
+    }
+
+    function closeEditTaskModal() {
+      var modal = document.getElementById('taskEditModal');
+      if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
+      activeTaskEditId = null;
+    }
+
+    function saveTaskEdit() {
+      if (!activeTaskEditId) return;
+      var payload = {
+        title: document.getElementById('editTaskTitle').value,
+        category: document.getElementById('editTaskCategory').value,
+        priority: document.getElementById('editTaskPriority').value,
+        track_status: document.getElementById('editTaskTrack').value,
+        due_date: document.getElementById('editTaskDue').value || null,
+        status: document.getElementById('editTaskStatus').value,
+        completed: document.getElementById('editTaskStatus').value === 'done'
+      };
+      taskRequest('PATCH', '?id=eq.' + encodeURIComponent(activeTaskEditId), payload, function (error) {
+        if (!error) { closeEditTaskModal(); loadTasks(); }
+      });
+    }
+
+    function deleteTask(taskId) {
+      activeTaskMenuId = null;
+      taskRequest('DELETE', '?id=eq.' + encodeURIComponent(taskId), null, function (error) {
+        if (!error) loadTasks();
+      });
+    }
+
+    function toggleTaskCompleted(taskId) {
+      var task = findTask(taskId);
+      if (!task) return;
+      var completed = !task.completed;
+      var status = completed ? 'done' : (task.status === 'done' ? 'todo' : task.status);
+      taskRequest('PATCH', '?id=eq.' + encodeURIComponent(taskId), { completed: completed, status: status }, function (error) {
+        if (!error) loadTasks();
+      });
+    }
+
     if (refreshAgentsBtn) {
       refreshAgentsBtn.addEventListener('click', function () {
         loadAgentsTab();
@@ -713,6 +1258,11 @@
       autoRefreshTimer = window.setInterval(function () {
         loadAgentsTab();
       }, 30000);
+
+      var taskCategoryFilter = document.getElementById('taskCategoryFilter');
+      var taskPriorityFilter = document.getElementById('taskPriorityFilter');
+      if (taskCategoryFilter) taskCategoryFilter.addEventListener('change', renderTaskColumns);
+      if (taskPriorityFilter) taskPriorityFilter.addEventListener('change', renderTaskColumns);
     });
   </script>
 </body>
