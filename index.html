@@ -57,6 +57,7 @@
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -226,6 +227,31 @@
       -webkit-backdrop-filter: blur(10px);
     }
 
+    .dashboard-widget.editing {
+      cursor: grab;
+      box-shadow: 0 0 0 1px rgba(124,58,237,0.28), 0 0 32px rgba(124,58,237,0.12);
+    }
+
+    .dashboard-widget.drag-ghost {
+      opacity: 0.5;
+    }
+
+    .dashboard-widget.drag-chosen {
+      transform: rotate(1deg);
+    }
+
+    .dashboard-widget .widget-handle {
+      display: none;
+    }
+
+    #dashboard.edit-mode .dashboard-widget .widget-handle {
+      display: inline-flex;
+    }
+
+    #dashboard.edit-mode .dashboard-widget {
+      cursor: grab;
+    }
+
     #dashboard .stagger-item,
     #agents .stagger-item,
     #tasks .stagger-item {
@@ -305,6 +331,9 @@
                     <p class="mt-2 text-sm text-white/55">The global pulse of Agent OS — priorities, risk, momentum, and next best actions.</p>
                   </div>
                   <div class="flex flex-wrap items-center gap-3">
+                    <button id="dashboardEditBtn" class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80">Edit layout</button>
+                    <button id="dashboardSaveBtn" class="hidden rounded-full border border-white/10 bg-white px-4 py-2 text-sm font-medium text-slate-900">Save layout</button>
+                    <button id="dashboardResetBtn" class="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80">Reset layout</button>
                     <span id="dashboardHealthPill" class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">System health: N/A</span>
                     <span id="dashboardUpdatedPill" class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">Last updated: --</span>
                   </div>
@@ -312,74 +341,138 @@
               </div>
             </div>
 
-            <div id="dashboardKpisGrid" class="col-span-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4"></div>
-
-            <div class="stagger-item glass-card gradient-border col-span-12 rounded-[28px] p-6 xl:col-span-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-xs uppercase tracking-[0.3em] text-white/45">Needs attention</p>
-                  <h3 class="mt-2 text-lg font-semibold">What needs action now</h3>
+            <div id="dashboardWidgetsGrid" class="col-span-12 grid gap-4 xl:grid-cols-12">
+              <div class="dashboard-widget stagger-item xl:col-span-12" data-widget="kpis">
+                <div class="glass-card gradient-border rounded-[28px] p-5">
+                  <div class="mb-4 flex items-center justify-between"><span class="widget-handle rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">Drag</span></div>
+                  <div id="dashboardKpisGrid" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4"></div>
                 </div>
-                <span class="rounded-full bg-red-500/10 px-3 py-1 text-xs text-red-300">Priority</span>
               </div>
-              <div id="dashboardAlertsList" class="mt-6 space-y-3"></div>
-            </div>
 
-            <div class="stagger-item glass-card gradient-border col-span-12 rounded-[28px] p-6 xl:col-span-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-xs uppercase tracking-[0.3em] text-white/45">Today's focus</p>
-                  <h3 class="mt-2 text-lg font-semibold">Top priorities and next move</h3>
+              <div class="dashboard-widget stagger-item xl:col-span-4" data-widget="alerts">
+                <div class="glass-card gradient-border rounded-[28px] p-6">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.3em] text-white/45">Needs attention</p>
+                      <h3 class="mt-2 text-lg font-semibold">What needs action now</h3>
+                    </div>
+                    <div class="flex items-center gap-2"><span class="widget-handle rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">Drag</span><span class="rounded-full bg-red-500/10 px-3 py-1 text-xs text-red-300">Priority</span></div>
+                  </div>
+                  <div id="dashboardAlertsList" class="mt-6 space-y-3"></div>
                 </div>
-                <span class="rounded-full bg-glowAmber/10 px-3 py-1 text-xs text-glowAmber">Focus</span>
               </div>
-              <div id="dashboardFocusList" class="mt-6 space-y-3"></div>
-            </div>
 
-            <div class="stagger-item glass-card gradient-border col-span-12 rounded-[28px] p-6 xl:col-span-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-xs uppercase tracking-[0.3em] text-white/45">Quick actions</p>
-                  <h3 class="mt-2 text-lg font-semibold">Jump straight to work</h3>
+              <div class="dashboard-widget stagger-item xl:col-span-4" data-widget="focus">
+                <div class="glass-card gradient-border rounded-[28px] p-6">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.3em] text-white/45">Today's focus</p>
+                      <h3 class="mt-2 text-lg font-semibold">Top priorities and next move</h3>
+                    </div>
+                    <div class="flex items-center gap-2"><span class="widget-handle rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">Drag</span><span class="rounded-full bg-glowAmber/10 px-3 py-1 text-xs text-glowAmber">Focus</span></div>
+                  </div>
+                  <div id="dashboardFocusList" class="mt-6 space-y-3"></div>
                 </div>
-                <span class="rounded-full bg-glowCyan/10 px-3 py-1 text-xs text-glowCyan">Actions</span>
               </div>
-              <div id="dashboardQuickActions" class="mt-6 grid gap-3 sm:grid-cols-2"></div>
-            </div>
 
-            <div class="stagger-item glass-card gradient-border col-span-12 rounded-[28px] p-6 xl:col-span-7">
-              <div class="flex items-center justify-between gap-4">
-                <div>
-                  <p class="text-xs uppercase tracking-[0.3em] text-white/45">Momentum</p>
-                  <h3 class="mt-2 text-lg font-semibold">7-day delivery pulse</h3>
+              <div class="dashboard-widget stagger-item xl:col-span-4" data-widget="actions">
+                <div class="glass-card gradient-border rounded-[28px] p-6">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.3em] text-white/45">Quick actions</p>
+                      <h3 class="mt-2 text-lg font-semibold">Jump straight to work</h3>
+                    </div>
+                    <div class="flex items-center gap-2"><span class="widget-handle rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">Drag</span><span class="rounded-full bg-glowCyan/10 px-3 py-1 text-xs text-glowCyan">Actions</span></div>
+                  </div>
+                  <div id="dashboardQuickActions" class="mt-6 grid gap-3 sm:grid-cols-2"></div>
                 </div>
-                <span id="dashboardMomentumPill" class="rounded-full bg-glowPurple/10 px-3 py-1 text-xs text-glowPurple">Loading</span>
               </div>
-              <div class="mt-6 rounded-[24px] border border-white/10 bg-white/[0.02] p-4">
-                <canvas id="dashboardMomentumChart" height="120"></canvas>
-              </div>
-            </div>
 
-            <div class="stagger-item glass-card gradient-border col-span-12 rounded-[28px] p-6 xl:col-span-5">
-              <div class="flex items-center justify-between gap-4">
-                <div>
-                  <p class="text-xs uppercase tracking-[0.3em] text-white/45">Bottlenecks</p>
-                  <h3 class="mt-2 text-lg font-semibold">Where the system is slowing down</h3>
+              <div class="dashboard-widget stagger-item xl:col-span-7" data-widget="momentum">
+                <div class="glass-card gradient-border rounded-[28px] p-6">
+                  <div class="flex items-center justify-between gap-4">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.3em] text-white/45">Momentum</p>
+                      <h3 class="mt-2 text-lg font-semibold">7-day delivery pulse</h3>
+                    </div>
+                    <div class="flex items-center gap-2"><span class="widget-handle rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">Drag</span><span id="dashboardMomentumPill" class="rounded-full bg-glowPurple/10 px-3 py-1 text-xs text-glowPurple">Loading</span></div>
+                  </div>
+                  <div class="mt-6 rounded-[24px] border border-white/10 bg-white/[0.02] p-4">
+                    <canvas id="dashboardMomentumChart" height="120"></canvas>
+                  </div>
                 </div>
-                <span class="rounded-full bg-glowPink/10 px-3 py-1 text-xs text-glowPink">Insight</span>
               </div>
-              <div id="dashboardBottlenecks" class="mt-6 space-y-3"></div>
-            </div>
 
-            <div class="stagger-item glass-card gradient-border col-span-12 rounded-[28px] p-6">
-              <div class="flex items-center justify-between gap-4">
-                <div>
-                  <p class="text-xs uppercase tracking-[0.3em] text-white/45">Cross-system timeline</p>
-                  <h3 class="mt-2 text-lg font-semibold">Latest important activity</h3>
+              <div class="dashboard-widget stagger-item xl:col-span-5" data-widget="bottlenecks">
+                <div class="glass-card gradient-border rounded-[28px] p-6">
+                  <div class="flex items-center justify-between gap-4">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.3em] text-white/45">Bottlenecks</p>
+                      <h3 class="mt-2 text-lg font-semibold">Where the system is slowing down</h3>
+                    </div>
+                    <div class="flex items-center gap-2"><span class="widget-handle rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">Drag</span><span class="rounded-full bg-glowPink/10 px-3 py-1 text-xs text-glowPink">Insight</span></div>
+                  </div>
+                  <div id="dashboardBottlenecks" class="mt-6 space-y-3"></div>
                 </div>
-                <span id="dashboardTimelinePill" class="rounded-full bg-white/5 px-3 py-1 text-xs text-white/60">0 events</span>
               </div>
-              <div id="dashboardTimeline" class="mt-6 space-y-3"></div>
+
+              <div class="dashboard-widget stagger-item xl:col-span-4" data-widget="statusChart">
+                <div class="glass-card gradient-border rounded-[28px] p-6">
+                  <div class="flex items-center justify-between gap-4">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.3em] text-white/45">Status mix</p>
+                      <h3 class="mt-2 text-lg font-semibold">Task distribution</h3>
+                    </div>
+                    <span class="widget-handle rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">Drag</span>
+                  </div>
+                  <div class="mt-6 rounded-[24px] border border-white/10 bg-white/[0.02] p-4">
+                    <canvas id="dashboardStatusChart" height="180"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <div class="dashboard-widget stagger-item xl:col-span-4" data-widget="categoryChart">
+                <div class="glass-card gradient-border rounded-[28px] p-6">
+                  <div class="flex items-center justify-between gap-4">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.3em] text-white/45">Category load</p>
+                      <h3 class="mt-2 text-lg font-semibold">Open work by category</h3>
+                    </div>
+                    <span class="widget-handle rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">Drag</span>
+                  </div>
+                  <div class="mt-6 rounded-[24px] border border-white/10 bg-white/[0.02] p-4">
+                    <canvas id="dashboardCategoryChart" height="180"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <div class="dashboard-widget stagger-item xl:col-span-4" data-widget="agentChart">
+                <div class="glass-card gradient-border rounded-[28px] p-6">
+                  <div class="flex items-center justify-between gap-4">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.3em] text-white/45">Agent activity</p>
+                      <h3 class="mt-2 text-lg font-semibold">Latest output by agent</h3>
+                    </div>
+                    <span class="widget-handle rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">Drag</span>
+                  </div>
+                  <div class="mt-6 rounded-[24px] border border-white/10 bg-white/[0.02] p-4">
+                    <canvas id="dashboardAgentChart" height="180"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <div class="dashboard-widget stagger-item xl:col-span-12" data-widget="timeline">
+                <div class="glass-card gradient-border rounded-[28px] p-6">
+                  <div class="flex items-center justify-between gap-4">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.3em] text-white/45">Cross-system timeline</p>
+                      <h3 class="mt-2 text-lg font-semibold">Latest important activity</h3>
+                    </div>
+                    <div class="flex items-center gap-2"><span class="widget-handle rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">Drag</span><span id="dashboardTimelinePill" class="rounded-full bg-white/5 px-3 py-1 text-xs text-white/60">0 events</span></div>
+                  </div>
+                  <div id="dashboardTimeline" class="mt-6 space-y-3"></div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -595,6 +688,11 @@
     var taskItems = [];
     var taskChart = null;
     var dashboardMomentumChart = null;
+    var dashboardStatusChart = null;
+    var dashboardCategoryChart = null;
+    var dashboardAgentChart = null;
+    var dashboardSortable = null;
+    var dashboardEditMode = false;
     var activeTaskMenuId = null;
     var activeTaskEditId = null;
     var dashboardLoadedOnce = false;
@@ -1379,6 +1477,130 @@
       });
     }
 
+    function getDashboardLayoutLocalKey() {
+      return 'agent_os_dashboard_layout_v1';
+    }
+
+    function getDashboardDefaultLayout() {
+      return ['kpis', 'alerts', 'focus', 'actions', 'momentum', 'bottlenecks', 'statusChart', 'categoryChart', 'agentChart', 'timeline'];
+    }
+
+    function applyDashboardLayout(order) {
+      var grid = document.getElementById('dashboardWidgetsGrid');
+      if (!grid || !order || !order.length) return;
+      for (var i = 0; i < order.length; i += 1) {
+        var node = grid.querySelector('[data-widget="' + order[i] + '"]');
+        if (node) grid.appendChild(node);
+      }
+    }
+
+    function collectDashboardLayout() {
+      var grid = document.getElementById('dashboardWidgetsGrid');
+      var nodes = grid ? grid.querySelectorAll('.dashboard-widget') : [];
+      var order = [];
+      for (var i = 0; i < nodes.length; i += 1) order.push(nodes[i].getAttribute('data-widget'));
+      return order;
+    }
+
+    function saveDashboardLayoutLocal(order) {
+      try { localStorage.setItem(getDashboardLayoutLocalKey(), JSON.stringify(order)); } catch (error) {}
+    }
+
+    function loadDashboardLayoutLocal() {
+      try {
+        var raw = localStorage.getItem(getDashboardLayoutLocalKey());
+        return raw ? JSON.parse(raw) : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function saveDashboardLayoutRemote(order, callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', SUPABASE_URL + '/rest/v1/dashboard_layouts', true);
+      xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates,return=representation');
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+        if (xhr.status >= 200 && xhr.status < 300) callback(null);
+        else callback(new Error('remote save failed'));
+      };
+      xhr.onerror = function () { callback(new Error('remote save failed')); };
+      xhr.send(JSON.stringify([{ profile_key: 'default', layout: order }]));
+    }
+
+    function loadDashboardLayoutRemote(callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', SUPABASE_URL + '/rest/v1/dashboard_layouts?select=layout&profile_key=eq.default&limit=1', true);
+      xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            var data = JSON.parse(xhr.responseText || '[]');
+            callback(null, data && data[0] ? data[0].layout : null);
+          } catch (error) {
+            callback(new Error('remote load failed'));
+          }
+        } else {
+          callback(new Error('remote load failed'));
+        }
+      };
+      xhr.onerror = function () { callback(new Error('remote load failed')); };
+      xhr.send();
+    }
+
+    function enableDashboardEditMode() {
+      dashboardEditMode = true;
+      var dashboard = document.getElementById('dashboard');
+      if (dashboard) dashboard.classList.add('edit-mode');
+      var widgets = document.querySelectorAll('#dashboard .dashboard-widget');
+      for (var i = 0; i < widgets.length; i += 1) widgets[i].classList.add('editing');
+      var saveBtn = document.getElementById('dashboardSaveBtn');
+      var resetBtn = document.getElementById('dashboardResetBtn');
+      var editBtn = document.getElementById('dashboardEditBtn');
+      if (saveBtn) saveBtn.classList.remove('hidden');
+      if (resetBtn) resetBtn.classList.remove('hidden');
+      if (editBtn) editBtn.classList.add('hidden');
+      if (!dashboardSortable && window.Sortable) {
+        dashboardSortable = new window.Sortable(document.getElementById('dashboardWidgetsGrid'), {
+          animation: 180,
+          handle: '.widget-handle',
+          ghostClass: 'drag-ghost',
+          chosenClass: 'drag-chosen',
+          draggable: '.dashboard-widget'
+        });
+      }
+    }
+
+    function disableDashboardEditMode() {
+      dashboardEditMode = false;
+      var dashboard = document.getElementById('dashboard');
+      if (dashboard) dashboard.classList.remove('edit-mode');
+      var widgets = document.querySelectorAll('#dashboard .dashboard-widget');
+      for (var i = 0; i < widgets.length; i += 1) widgets[i].classList.remove('editing');
+      var saveBtn = document.getElementById('dashboardSaveBtn');
+      var resetBtn = document.getElementById('dashboardResetBtn');
+      var editBtn = document.getElementById('dashboardEditBtn');
+      if (saveBtn) saveBtn.classList.add('hidden');
+      if (resetBtn) resetBtn.classList.add('hidden');
+      if (editBtn) editBtn.classList.remove('hidden');
+      if (dashboardSortable) {
+        dashboardSortable.destroy();
+        dashboardSortable = null;
+      }
+    }
+
+    function resetDashboardLayout() {
+      var layout = getDashboardDefaultLayout();
+      applyDashboardLayout(layout);
+      saveDashboardLayoutLocal(layout);
+      saveDashboardLayoutRemote(layout, function () {});
+    }
+
     function renderDashboardKpis(kpis) {
       var items = [
         { label: 'Active agents', value: kpis.activeAgents, sub: 'With activity in last 24h', tone: 'text-glowCyan' },
@@ -1483,6 +1705,55 @@
           }
         });
       }
+
+      var statusCounts = { todo: 0, in_progress: 0, done: 0 };
+      var categoryCounts = {};
+      var agentCounts = {};
+      for (var t = 0; t < taskRows.length; t += 1) {
+        var task = taskRows[t];
+        if (statusCounts[task.status] != null) statusCounts[task.status] += 1;
+        if (task.status !== 'done') {
+          if (!categoryCounts[task.category || 'Other']) categoryCounts[task.category || 'Other'] = 0;
+          categoryCounts[task.category || 'Other'] += 1;
+        }
+      }
+      for (var a = 0; a < AGENTS.length; a += 1) agentCounts[AGENTS[a].name] = 0;
+      var rows = window.__dashboardAgentRows || [];
+      for (var r = 0; r < rows.length; r += 1) {
+        if (agentCounts[rows[r].agent_name] != null) agentCounts[rows[r].agent_name] += 1;
+      }
+
+      var statusCtx = document.getElementById('dashboardStatusChart');
+      if (statusCtx) {
+        if (dashboardStatusChart) dashboardStatusChart.destroy();
+        dashboardStatusChart = new Chart(statusCtx, {
+          type: 'doughnut',
+          data: { labels: ['To Do', 'Doing', 'Done'], datasets: [{ data: [statusCounts.todo, statusCounts.in_progress, statusCounts.done], backgroundColor: ['#3B82F6', '#F59E0B', '#10B981'], borderWidth: 0 }] },
+          options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { labels: { color: 'rgba(255,255,255,0.6)' } } } }
+        });
+      }
+
+      var categoryLabels = Object.keys(categoryCounts);
+      var categoryCtx = document.getElementById('dashboardCategoryChart');
+      if (categoryCtx) {
+        if (dashboardCategoryChart) dashboardCategoryChart.destroy();
+        dashboardCategoryChart = new Chart(categoryCtx, {
+          type: 'bar',
+          data: { labels: categoryLabels, datasets: [{ data: categoryLabels.map(function (key) { return categoryCounts[key]; }), backgroundColor: ['#7C3AED', '#F59E0B', '#10B981', '#06B6D4'] }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'rgba(255,255,255,0.45)' }, grid: { display: false } }, y: { ticks: { color: 'rgba(255,255,255,0.45)', precision: 0 }, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+        });
+      }
+
+      var agentLabels = Object.keys(agentCounts);
+      var agentCtx = document.getElementById('dashboardAgentChart');
+      if (agentCtx) {
+        if (dashboardAgentChart) dashboardAgentChart.destroy();
+        dashboardAgentChart = new Chart(agentCtx, {
+          type: 'bar',
+          data: { labels: agentLabels, datasets: [{ data: agentLabels.map(function (key) { return agentCounts[key]; }), backgroundColor: '#EC4899', borderRadius: 8 }] },
+          options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'rgba(255,255,255,0.45)', precision: 0 }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: 'rgba(255,255,255,0.45)' }, grid: { display: false } } } }
+        });
+      }
     }
 
     function initializeDashboard() {
@@ -1494,6 +1765,7 @@
 
         var agentRows = data.agentRows;
         var taskRows = data.taskRows;
+        window.__dashboardAgentRows = agentRows;
         var now = new Date();
         var startToday = startOfToday();
         var startWeek = startOfWeek();
@@ -1591,8 +1863,13 @@
           timeline.push({ title: 'Task in ' + (taskRows[i].status || 'todo'), sub: taskRows[i].title || 'Untitled task', time: taskRows[i].created_at ? formatDateTime(taskRows[i].created_at) : 'N/A' });
         }
         renderDashboardTimeline(timeline);
-        dashboardLoadedOnce = true;
-        animateStagger(document.getElementById('dashboard'));
+        loadDashboardLayoutRemote(function (remoteError, remoteLayout) {
+          var layout = remoteLayout && remoteLayout.length ? remoteLayout : loadDashboardLayoutLocal();
+          if (!layout || !layout.length) layout = getDashboardDefaultLayout();
+          applyDashboardLayout(layout);
+          dashboardLoadedOnce = true;
+          animateStagger(document.getElementById('dashboard'));
+        });
       });
     }
 
@@ -1630,6 +1907,21 @@
       if (requireDashboardAuth()) {
         initializeDashboard();
       }
+
+      var dashboardEditBtn = document.getElementById('dashboardEditBtn');
+      var dashboardSaveBtn = document.getElementById('dashboardSaveBtn');
+      var dashboardResetBtn = document.getElementById('dashboardResetBtn');
+      if (dashboardEditBtn) dashboardEditBtn.addEventListener('click', enableDashboardEditMode);
+      if (dashboardSaveBtn) dashboardSaveBtn.addEventListener('click', function () {
+        var layout = collectDashboardLayout();
+        saveDashboardLayoutLocal(layout);
+        saveDashboardLayoutRemote(layout, function () {});
+        disableDashboardEditMode();
+      });
+      if (dashboardResetBtn) dashboardResetBtn.addEventListener('click', function () {
+        resetDashboardLayout();
+        disableDashboardEditMode();
+      });
 
       autoRefreshTimer = window.setInterval(function () {
         if (document.getElementById('agents').classList.contains('active')) {
