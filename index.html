@@ -240,6 +240,27 @@
   </style>
 </head>
 <body class="bg-base text-white antialiased">
+  <div id="authGate" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#060912]/95 px-4">
+    <div class="glass-card gradient-border w-full max-w-md rounded-[28px] p-6 sm:p-7">
+      <div class="flex items-center gap-4">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-glowPurple via-glowPink to-glowCyan shadow-neon">
+          <span class="text-lg font-bold tracking-tight">AO</span>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.35em] text-white/45">Protected Access</p>
+          <h2 class="text-xl font-semibold tracking-tight">Agent OS Dashboard</h2>
+        </div>
+      </div>
+      <p class="mt-5 text-sm leading-6 text-white/60">Enter your password to unlock the dashboard. Access stays remembered on this device for 14 days.</p>
+      <div class="mt-5 space-y-3">
+        <input id="authPasswordInput" type="password" placeholder="Password" class="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25" />
+        <div class="flex items-center justify-between gap-3">
+          <p id="authErrorText" class="text-sm text-red-300"></p>
+          <button id="authUnlockBtn" class="rounded-full bg-white px-5 py-2 text-sm font-medium text-slate-900 transition hover:opacity-90">Unlock</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="relative min-h-screen">
     <div class="absolute inset-0 pointer-events-none">
       <div class="absolute left-[-10rem] top-[-6rem] h-72 w-72 rounded-full bg-purple-600/20 blur-3xl"></div>
@@ -540,6 +561,9 @@
   <script>
     var SUPABASE_URL = 'https://mopskjgyvmhffspeluhj.supabase.co';
     var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vcHNramd5dm1oZmZzcGVsdWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNTU3MTUsImV4cCI6MjA4OTkzMTcxNX0.zfjFvty1t4okk4BpNbWU0uQRNhy_XHFEZiQGjJuFo3k';
+    var DASHBOARD_PASSWORD = 'Hassan007';
+    var DASHBOARD_AUTH_KEY = 'agent_os_dashboard_auth_v1';
+    var DASHBOARD_AUTH_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
     var AGENTS = [
       { name: 'Alex', emoji: '🔵', role: 'Research Analyst', color: '#3B82F6' },
@@ -561,6 +585,10 @@
     var agentsConnectionPill = document.getElementById('agentsConnectionPill');
     var activityCountPill = document.getElementById('activityCountPill');
     var modelTotalsBar = document.getElementById('modelTotalsBar');
+    var authGate = document.getElementById('authGate');
+    var authPasswordInput = document.getElementById('authPasswordInput');
+    var authUnlockBtn = document.getElementById('authUnlockBtn');
+    var authErrorText = document.getElementById('authErrorText');
     var autoRefreshTimer = null;
     var isLoadingAgents = false;
     var tasksLoadedOnce = false;
@@ -578,6 +606,38 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+    }
+
+    function isDashboardAuthorized() {
+      try {
+        var raw = localStorage.getItem(DASHBOARD_AUTH_KEY);
+        if (!raw) return false;
+        var data = JSON.parse(raw);
+        if (!data || !data.expiresAt) return false;
+        return Number(data.expiresAt) > Date.now();
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function persistDashboardAccess() {
+      try {
+        localStorage.setItem(DASHBOARD_AUTH_KEY, JSON.stringify({ expiresAt: Date.now() + DASHBOARD_AUTH_TTL_MS }));
+      } catch (error) {}
+    }
+
+    function unlockDashboard() {
+      if (authGate) authGate.style.display = 'none';
+      if (authErrorText) authErrorText.textContent = '';
+    }
+
+    function requireDashboardAuth() {
+      if (isDashboardAuthorized()) {
+        unlockDashboard();
+        return true;
+      }
+      if (authGate) authGate.style.display = 'flex';
+      return false;
     }
 
     function formatDateTime(value) {
@@ -1547,7 +1607,30 @@
       renderModelUsage(createAgentSummaryMap());
       taskStatsGrid.innerHTML = '<div class="rounded-[22px] border border-white/10 bg-white/[0.03] p-4 text-sm text-white/50">Loading Agents dashboard...</div>';
       recentActivityFeed.innerHTML = '<div class="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-6 text-sm text-white/50">Loading recent activity...</div>';
-      initializeDashboard();
+
+      if (authUnlockBtn) {
+        authUnlockBtn.addEventListener('click', function () {
+          var entered = authPasswordInput ? authPasswordInput.value : '';
+          if (entered === DASHBOARD_PASSWORD) {
+            persistDashboardAccess();
+            unlockDashboard();
+            initializeDashboard();
+          } else if (authErrorText) {
+            authErrorText.textContent = 'Incorrect password';
+          }
+        });
+      }
+
+      if (authPasswordInput) {
+        authPasswordInput.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' && authUnlockBtn) authUnlockBtn.click();
+        });
+      }
+
+      if (requireDashboardAuth()) {
+        initializeDashboard();
+      }
+
       autoRefreshTimer = window.setInterval(function () {
         if (document.getElementById('agents').classList.contains('active')) {
           loadAgentsTab();
