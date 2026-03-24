@@ -1516,14 +1516,14 @@
 
     function saveDashboardLayoutRemote(order, callback) {
       var xhr = new XMLHttpRequest();
-      xhr.open('POST', SUPABASE_URL + '/rest/v1/dashboard_layouts', true);
+      xhr.open('POST', SUPABASE_URL + '/rest/v1/dashboard_layouts?on_conflict=profile_key', true);
       xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
       xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
       xhr.setRequestHeader('Content-Type', 'application/json');
       xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates,return=representation');
       xhr.onreadystatechange = function () {
         if (xhr.readyState !== 4) return;
-        if (xhr.status >= 200 && xhr.status < 300) callback(null);
+        if (xhr.status >= 200 && xhr.status < 300) callback(null, xhr.responseText);
         else callback(new Error('remote save failed'));
       };
       xhr.onerror = function () { callback(new Error('remote save failed')); };
@@ -1913,12 +1913,15 @@
       if (dashboardSaveBtn) dashboardSaveBtn.addEventListener('click', function () {
         var layout = collectDashboardLayout();
         saveDashboardLayoutLocal(layout);
-        saveDashboardLayoutRemote(layout, function () {});
-        disableDashboardEditMode();
+        saveDashboardLayoutRemote(layout, function () {
+          disableDashboardEditMode();
+          initializeDashboard();
+        });
       });
       if (dashboardResetBtn) dashboardResetBtn.addEventListener('click', function () {
         resetDashboardLayout();
         disableDashboardEditMode();
+        initializeDashboard();
       });
 
       autoRefreshTimer = window.setInterval(function () {
