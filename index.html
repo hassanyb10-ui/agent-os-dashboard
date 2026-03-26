@@ -263,6 +263,45 @@
     @media (max-width: 1024px) {
       .grid-shell { grid-template-columns: repeat(1, minmax(0, 1fr)); }
     }
+
+    @media (max-width: 640px) {
+      .grid-shell {
+        display: block;
+      }
+
+      .grid-shell > * {
+        width: 100%;
+        min-width: 0;
+        margin-bottom: 1rem;
+      }
+
+      .grid-shell > *:last-child {
+        margin-bottom: 0;
+      }
+
+      #dashboardWidgetsGrid,
+      #agentCardsGrid {
+        display: block;
+      }
+
+      #dashboardWidgetsGrid > *,
+      #agentCardsGrid > * {
+        width: 100%;
+        min-width: 0;
+        margin-bottom: 1rem;
+      }
+
+      #dashboardWidgetsGrid > *:last-child,
+      #agentCardsGrid > *:last-child {
+        margin-bottom: 0;
+      }
+
+      .glass-card,
+      .agent-card,
+      .task-column {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body class="bg-base text-white antialiased">
