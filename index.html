@@ -662,8 +662,8 @@
       { name: 'Maya', emoji: '🟣', role: 'Content Writer', color: '#7C3AED' },
       { name: 'Jordan', emoji: '🟠', role: 'Marketing Strategist', color: '#F59E0B' },
       { name: 'Dev', emoji: '🟢', role: 'Full Stack Developer', color: '#10B981' },
-      { name: 'Atlas', emoji: '🧠', role: 'Academic work', color: '#06B6D4' },
-      { name: 'Titan', emoji: '💪', role: 'Gym Performance coach', color: '#EC4899' }
+      { name: 'Atlas', emoji: '', role: 'Academic work', color: '#06B6D4', useDot: true },
+      { name: 'Titan', emoji: '', role: 'Gym Performance coach', color: '#EC4899', useDot: true }
     ];
 
     var agentsLoadedOnce = false;
@@ -839,10 +839,14 @@
         var lastActive = latest && latest.created_at ? formatDateTime(latest.created_at) : 'N/A';
         var tasksToday = typeof summary.tasksToday === 'number' ? summary.tasksToday : 0;
 
+        var leftMarker = agent.useDot
+          ? '<span class="inline-block h-4 w-4 rounded-full" style="background:' + agent.color + '; box-shadow:0 0 16px ' + agent.color + '"></span>'
+          : '<span class="text-2xl">' + agent.emoji + '</span>';
+
         html += '' +
           '<article class="stagger-item agent-card glass-card relative overflow-hidden rounded-[28px] p-6" style="--agent-color:' + agent.color + '">' +
             '<div class="flex items-start justify-between gap-4">' +
-              '<div><div class="flex items-center gap-3"><span class="text-2xl">' + agent.emoji + '</span><div><h3 class="text-lg font-bold tracking-tight">' + escapeHtml(agent.name) + '</h3><p class="text-sm text-white/50">' + escapeHtml(agent.role) + '</p></div></div></div>' +
+              '<div><div class="flex items-center gap-3">' + leftMarker + '<div><h3 class="text-lg font-bold tracking-tight">' + escapeHtml(agent.name) + '</h3><p class="text-sm text-white/50">' + escapeHtml(agent.role) + '</p></div></div></div>' +
               '<div class="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300"><span class="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(74,222,128,0.8)]"></span>Connected</div>' +
             '</div>' +
             '<div class="mt-6 grid gap-4 sm:grid-cols-2">' +
