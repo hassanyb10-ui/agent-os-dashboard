@@ -549,7 +549,7 @@
               </div>
             </div>
 
-            <div id="agentCardsGrid" class="col-span-12 grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+            <div id="agentCardsGrid" class="col-span-12 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3"></div>
 
             <div class="stagger-item glass-card gradient-border col-span-12 rounded-[28px] p-6 xl:col-span-4">
               <div class="flex items-center justify-between">
@@ -709,7 +709,10 @@
       { name: 'Jordan', emoji: '🟠', role: 'Marketing Strategist', color: '#F59E0B' },
       { name: 'Dev', emoji: '🟢', role: 'Full Stack Developer', color: '#10B981' },
       { name: 'Atlas', emoji: '', role: 'Academic work', color: '#06B6D4', useDot: true },
-      { name: 'Titan', emoji: '', role: 'Gym Performance coach', color: '#EC4899', useDot: true }
+      { name: 'Titan', emoji: '', role: 'Gym Performance coach', color: '#EC4899', useDot: true },
+      { name: 'VITAL', emoji: '', role: 'Bio-Logic Mirror', color: '#84CC16', useDot: true },
+      { name: 'Sentinelle', emoji: '', role: 'Security & Watch', color: '#F97316', useDot: true },
+      { name: 'RITUAL', emoji: '', role: 'Rhythm Architect', color: '#A78BFA', useDot: true }
     ];
 
     var agentsLoadedOnce = false;
@@ -890,17 +893,17 @@
           : '<span class="text-2xl">' + agent.emoji + '</span>';
 
         html += '' +
-          '<article class="stagger-item agent-card glass-card relative overflow-hidden rounded-[28px] p-6" style="--agent-color:' + agent.color + '">' +
-            '<div class="flex items-start justify-between gap-4">' +
-              '<div><div class="flex items-center gap-3">' + leftMarker + '<div><h3 class="text-lg font-bold tracking-tight">' + escapeHtml(agent.name) + '</h3><p class="text-sm text-white/50">' + escapeHtml(agent.role) + '</p></div></div></div>' +
-              '<div class="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300"><span class="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(74,222,128,0.8)]"></span>Connected</div>' +
+          '<article class="stagger-item agent-card glass-card relative overflow-hidden rounded-[26px] p-5" style="--agent-color:' + agent.color + '">' +
+            '<div class="flex items-start justify-between gap-3">' +
+              '<div><div class="flex items-center gap-3">' + leftMarker + '<div><h3 class="text-base font-bold tracking-tight">' + escapeHtml(agent.name) + '</h3><p class="text-[13px] text-white/50">' + escapeHtml(agent.role) + '</p></div></div></div>' +
+              '<div class="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300"><span class="mr-1.5 inline-block h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(74,222,128,0.8)]"></span>Connected</div>' +
             '</div>' +
-            '<div class="mt-6 grid gap-4 sm:grid-cols-2">' +
-              '<div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p class="text-xs uppercase tracking-[0.25em] text-white/40">Model</p><p class="mt-3 break-words text-sm font-medium text-white/90">' + escapeHtml(modelUsed) + '</p></div>' +
-              '<div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p class="text-xs uppercase tracking-[0.25em] text-white/40">Last active</p><p class="mt-3 text-sm font-medium text-white/90">' + escapeHtml(lastActive) + '</p></div>' +
+            '<div class="mt-5 grid gap-3 sm:grid-cols-2">' +
+              '<div class="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5"><p class="text-[11px] uppercase tracking-[0.25em] text-white/40">Model</p><p class="mt-2.5 break-words text-sm font-medium text-white/90">' + escapeHtml(modelUsed) + '</p></div>' +
+              '<div class="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5"><p class="text-[11px] uppercase tracking-[0.25em] text-white/40">Last active</p><p class="mt-2.5 text-sm font-medium text-white/90">' + escapeHtml(lastActive) + '</p></div>' +
             '</div>' +
-            '<div class="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p class="text-xs uppercase tracking-[0.25em] text-white/40">Last task</p><p class="mt-3 min-h-[3.75rem] text-sm leading-6 text-white/82">' + escapeHtml(lastTask) + '</p></div>' +
-            '<div class="mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"><div class="flex items-center gap-2 text-sm text-white/70"><span class="metric-dot"></span>Tasks today</div><span class="text-lg font-semibold text-white">' + tasksToday + '</span></div>' +
+            '<div class="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5"><p class="text-[11px] uppercase tracking-[0.25em] text-white/40">Last task</p><p class="mt-2.5 min-h-[3rem] text-sm leading-5 text-white/82">' + escapeHtml(lastTask) + '</p></div>' +
+            '<div class="mt-3 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"><div class="flex items-center gap-2 text-sm text-white/70"><span class="metric-dot"></span>Tasks today</div><span class="text-base font-semibold text-white">' + tasksToday + '</span></div>' +
           '</article>';
       }
       agentCardsGrid.innerHTML = html;
